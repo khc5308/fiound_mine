@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <style>
+        * {
+            text-align: center;
+        }
+
+        #board {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #board tr td {
+            border: 1px solid white;
+            background: #34da79;
+            width: 21px;
+            height: 16px;
+            text-align: center;
+            position: relative;
+        }
+
+        #board tr td span {
+            visibility: hidden; /* 초기 상태는 숨김 */
+        }
+
+        #board tr td.clicked span {
+            visibility: visible; /* clicked 클래스일 때 숫자 보임 */
+        }
+
+        #board tr td.mine span.mine-mark {
+            visibility: visible; /* mine 클래스일 때만 M 보임 */
+        }
+
+        #board tr td.mine {
+            background: #FF0000;
+            color: white;
+        }
+
+        #board tr td.flag {
+            background: yellow;
+        }
+
+        input {
+            width: 8%;
+        }
+
+        p {
+            display: inline;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>지뢰찾기</h1>
+    <table id="board"></table>
+    <p>남은 지뢰 : </p>
+    <p id="left">ad</p>
+
+    <br>
+    <button id="button" onclick="genGrid();">새로운 게임</button>
+    <br>
+    가로 길이<input id="x" type="number">
+    세로 길이<input id="y" type="number">
+
+    <script>
+        let grid = document.getElementById("board");
+        genGrid();
+
+        function genGrid() {
+            let x = document.getElementById("x").value || 5; // Default 값 설정
+            let y = document.getElementById("y").value || 5; // Default 값 설정
+            grid.innerHTML = "";
+
+            for (let i = 0; i < x; i++) {
+                let row = grid.insertRow(i);
+                for (let j = 0; j < y; j++) {
+                    let cell = row.insertCell(j);
+                    cell.setAttribute('mine', 'false'); // 모든 셀에 mine 속성 false로 추가
+                    cell.innerHTML = "<span>0</span><span class='mine-mark'></span>"; // 초기값 설정
+                    cell.oncontextmenu = (e) => e.preventDefault(); // 우클릭 기본 메뉴 비활성화
+
+                    // Add the event listener using the extracted function
+                    cell.addEventListener('mousedown', (event) => handleCellClick(event, cell));
+                }
+            }
+
+            addMine();
+        }
+
+        // Extracted function to handle cell click events
+        function handleCellClick(event, cell) {
+            if (event.button === 2 && !cell.classList.contains('clicked')) {
+                // 플래그 추가 및 삭제
+                if (cell.classList.contains("flag")) {
+                    document.querySelector("#left").innerHTML = parseInt(document.querySelector("#left").innerHTML) + 1;
+                    cell.classList.remove("flag");
+                } else {
+                    document.querySelector("#left").innerHTML = parseInt(document.querySelector("#left").innerHTML) - 1;
+                    cell.classList.add("flag");
+                }
+            } else if (event.button === 0 && !cell.classList.contains('flag')) {
+                if (cell.getAttribute('mine') == "true") {
+                    alert("GAME OVER");
+                    revealMines()
+                    cell.classList.add("mine");
+                    
+                    setTimeout(() => genGrid(), 1000);
+                } else {
+                    cell.classList.add('clicked'); // 좌클릭 시 flag가 없는 경우에만 clicked 클래스 추가
+                }
+            }
+        }
+
+        function addMine() {
+            let a = document.getElementById("x").value || 5;
+            let b = document.getElementById("y").value || 5;
+            let table = document.getElementById("board");
+            let total_mine = parseInt(a * b * 0.25);
+            document.querySelector("#left").innerHTML = total_mine;
+            while (total_mine > 0) {
+                let i = Math.floor(Math.random() * a);
+                let j = Math.floor(Math.random() * b);
+
+                if (table.rows[i].cells[j].getAttribute('mine') === 'false') {
+                    table.rows[i].cells[j].setAttribute('mine', 'true');
+                    total_mine--;
+                    updateAdjacentCells(i, j, a, b, table);
+                }
+            }
+        }
+
+        // 주변 셀의 innerHTML 값을 +1 해주는 함수
+        function updateAdjacentCells(i, j, a, b, table) {
+            for (let x = i - 1; x <= i + 1; x++) {
+                for (let y = j - 1; y <= j + 1; y++) {
+                    if (x >= 0 && x < a && y >= 0 && y < b) { // 유효한 좌표인지 확인
+                        let cell = table.rows[x].cells[y];
+                        if (cell.getAttribute('mine') === 'false') { // 지뢰가 아닌 경우에만
+                            let span = cell.querySelector("span");
+                            span.innerHTML = parseInt(span.innerHTML) + 1; // 주변 숫자 증가
+                        }
+                    }
+                }
+            }
+        }
+
+        function revealMines() {
+        let table = document.getElementById("board");
+        for (let row of table.rows) {
+            for (let cell of row.cells) {
+                if (cell.getAttribute('mine') === 'true') {
+                    cell.classList.add('mine'); // Add the mine class to all mine cells
+                }
+            }
+        }
+    }
+    
+    </script>
+</body>
+
+</html>
